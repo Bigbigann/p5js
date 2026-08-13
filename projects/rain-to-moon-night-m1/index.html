@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>After rain · Night study</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --surround: #050711;
+        --panel: #101625;
+        --ink: #e5e0d5;
+        --muted: #8d93a5;
+        --gold: #d7b86e;
+        --line: rgba(192, 201, 223, 0.13);
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: clamp(14px, 3vw, 38px);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 38% 20%, #11182b 0, transparent 42%),
+          var(--surround);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .workspace {
+        width: min(100%, 1110px);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 720px) minmax(250px, 320px);
+        gap: clamp(20px, 3vw, 38px);
+        align-items: start;
+      }
+
+      main {
+        overflow: hidden;
+        background: #090d18;
+        box-shadow: 0 26px 74px rgba(0, 0, 0, 0.46);
+        cursor: pointer;
+      }
+
+      #sketch-holder,
+      #sketch-holder canvas {
+        display: block;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      aside {
+        padding: 24px 22px 26px;
+        background: rgba(16, 22, 37, 0.92);
+        border-top: 2px solid var(--gold);
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.28);
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .status {
+        margin: 0 0 18px;
+        color: var(--gold);
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .instruction {
+        margin: 0 0 20px;
+        color: #c7c5c0;
+        font-size: 13px;
+        font-style: italic;
+        line-height: 1.6;
+      }
+
+      .qualities {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .quality {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .quality-number {
+        color: #727a91;
+        font: 600 10px/1.5 Arial, sans-serif;
+        letter-spacing: 0.08em;
+      }
+
+      .quality strong {
+        display: block;
+        margin-bottom: 3px;
+        color: #d9d8d4;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .quality span:last-child {
+        color: var(--muted);
+        font: 11px/1.45 Arial, sans-serif;
+      }
+
+      .note {
+        margin: 17px 0 0;
+        color: var(--muted);
+        font: 11px/1.5 Arial, sans-serif;
+      }
+
+      @media (max-width: 880px) {
+        .workspace {
+          width: min(100%, 680px);
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        body { padding: 0; }
+        main,
+        aside { box-shadow: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="workspace">
+      <main
+        id="weather-study"
+        role="button"
+        tabindex="0"
+        aria-label="Night rain study. Click to clear the rain and reveal a full moon, grass, and fireflies."
+      >
+        <div id="sketch-holder"></div>
+      </main>
+
+      <aside>
+        <h1>After rain · night</h1>
+        <p class="status">Ethereal night study</p>
+        <p class="instruction">
+          Click the artwork to quiet the rain. The cloud dissolves, a full
+          moon gathers its glow, dark grass rises, and fireflies wake above the
+          ground. Click again to call the rain back.
+        </p>
+
+        <ol class="qualities" aria-label="Night scene qualities">
+          <li class="quality">
+            <span class="quality-number">01</span>
+            <span>
+              <strong>Velvety night</strong>
+              <span>Deep blue and indigo atmosphere</span>
+            </span>
+          </li>
+          <li class="quality">
+            <span class="quality-number">02</span>
+            <span>
+              <strong>Luminous full moon</strong>
+              <span>A soft bloom with no hard halo</span>
+            </span>
+          </li>
+          <li class="quality">
+            <span class="quality-number">03</span>
+            <span>
+              <strong>Living ground</strong>
+              <span>Layered grass with varied wind response</span>
+            </span>
+          </li>
+          <li class="quality">
+            <span class="quality-number">04</span>
+            <span>
+              <strong>Golden fireflies</strong>
+              <span>Drifting points with delicate trails</span>
+            </span>
+          </li>
+        </ol>
+
+        <p id="interaction-state" class="note">
+          Night rain is falling · click to reveal the moonlit field.
+        </p>
+      </aside>
+    </div>
+
+    <script src="../journey-work-m3-frame/p5.min.js"></script>
+    <script src="sketch.js?v=20260803-direct-fade"></script>
+    <script>
+      const interactionState = document.getElementById("interaction-state");
+      const study = document.getElementById("weather-study");
+
+      window.rainInteractionChanged = (active) => {
+        interactionState.textContent = active
+          ? "Night rain is returning · the moonlit field is receding."
+          : "Rain is clearing · the moon and fireflies are waking.";
+      };
+
+      study.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (typeof window.rainToggle === "function") window.rainToggle();
+        }
+      });
+    </script>
+  </body>
+</html>

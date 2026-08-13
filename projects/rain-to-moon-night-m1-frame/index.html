@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>After rain · Night square framed view</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --surround: #050711;
+        --panel: #101625;
+        --ink: #e5e0d5;
+        --muted: #8d93a5;
+        --gold: #d7b86e;
+        --line: rgba(192, 201, 223, 0.13);
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: clamp(16px, 3vw, 40px);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 34% 18%, #11182b 0, transparent 44%),
+          var(--surround);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .workspace {
+        width: min(100%, 1120px);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 720px) minmax(250px, 320px);
+        gap: clamp(20px, 3vw, 38px);
+        align-items: start;
+      }
+
+      .photo-stage {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background: #090d18;
+        box-shadow: 0 28px 76px rgba(0, 0, 0, 0.5);
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .scene-photo {
+        display: block;
+        width: 100%;
+        height: auto;
+        pointer-events: none;
+      }
+
+      #frame-mask {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      #night-wrap {
+        position: absolute;
+        aspect-ratio: 900 / 1120;
+        transform: translate(-50%, -50%);
+        transform-origin: center;
+        pointer-events: none;
+      }
+
+      #sketch-holder,
+      #sketch-holder canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        pointer-events: none;
+      }
+
+      aside {
+        padding: 24px 22px 26px;
+        background: rgba(16, 22, 37, 0.92);
+        border-top: 2px solid var(--gold);
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.28);
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .status {
+        margin: 0 0 18px;
+        color: var(--gold);
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .instruction {
+        margin: 0 0 18px;
+        color: #c7c5c0;
+        font-size: 13px;
+        font-style: italic;
+        line-height: 1.6;
+      }
+
+      .control-group {
+        padding: 15px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .range-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 7px;
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .range-value {
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--gold);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button,
+      a.button {
+        appearance: none;
+        display: inline-block;
+        padding: 9px 12px;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid rgba(213, 211, 205, 0.28);
+        border-radius: 999px;
+        font: 12px/1 Arial, sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      a.button.primary {
+        color: #15131a;
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      .photo-stage:focus-visible {
+        outline: 2px solid rgba(215, 184, 110, 0.72);
+        outline-offset: 2px;
+      }
+
+      .note {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font: 11px/1.5 Arial, sans-serif;
+      }
+
+      @media (max-width: 880px) {
+        .workspace {
+          width: min(100%, 680px);
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        body { padding: 0; }
+        .photo-stage,
+        aside { box-shadow: none; }
+      }
+
+      body.comparison-mode {
+        min-height: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      body.comparison-mode .workspace {
+        display: block;
+        width: 100%;
+      }
+
+      body.comparison-mode aside { display: none; }
+      body.comparison-mode .photo-stage { box-shadow: none; }
+    </style>
+  </head>
+  <body>
+    <div class="workspace">
+      <main
+        id="photo-stage"
+        class="photo-stage"
+        role="button"
+        tabindex="0"
+        aria-label="Interactive moonlit rain study placed inside a dark wooden frame"
+      >
+        <img
+          class="scene-photo"
+          src="frame-photo-dark-square.png"
+          alt="Square dark wooden picture frame on a softly lit indigo wall"
+        />
+        <div id="frame-mask">
+          <div id="night-wrap">
+            <div id="sketch-holder"></div>
+          </div>
+        </div>
+      </main>
+
+      <aside>
+        <h1>After rain · night square frame</h1>
+        <p class="status">Ethereal framed study</p>
+        <p class="instruction">
+          Click the photograph to quiet the rain and reveal the moonlit field.
+          Use the controls to position the living scene within the frame.
+        </p>
+
+        <div class="control-group">
+          <label class="range-label" for="scale-control">
+            Scale
+            <span id="scale-value" class="range-value">150%</span>
+          </label>
+          <input id="scale-control" type="range" min="55" max="300" step="1" value="150" />
+        </div>
+
+        <div class="control-group">
+          <label class="range-label" for="horizontal-control">
+            Horizontal
+            <span id="horizontal-value" class="range-value">0%</span>
+          </label>
+          <input id="horizontal-control" type="range" min="-40" max="40" step="1" value="0" />
+        </div>
+
+        <div class="control-group">
+          <label class="range-label" for="vertical-control">
+            Vertical
+            <span id="vertical-value" class="range-value">0%</span>
+          </label>
+          <input id="vertical-control" type="range" min="-40" max="40" step="1" value="0" />
+        </div>
+
+        <div class="control-group actions">
+          <a class="button primary" href="../rain-to-moon-night-m1/index.html">View isolation</a>
+          <button id="reset-button" type="button">Reset placement</button>
+        </div>
+
+        <p id="frame-interaction-state" class="note">
+          Night rain is falling · click to reveal the moonlit field.
+        </p>
+      </aside>
+    </div>
+
+    <script>
+      window.RAIN_PRESENTATION_MODE = "frame";
+    </script>
+    <script src="../journey-work-m3-frame/p5.min.js"></script>
+    <script src="../rain-to-moon-night-m1/sketch.js?v=20260805-video-export"></script>
+    <script src="./frame-photo-data.js?v=20260806-full-frame-export"></script>
+    <script src="../shared/framed-video-export.js?v=20260806-full-frame-export"></script>
+    <script>
+      const stage = document.getElementById("photo-stage");
+      const scenePhoto = document.querySelector(".scene-photo");
+      const frameMask = document.getElementById("frame-mask");
+      const nightWrap = document.getElementById("night-wrap");
+      const frameInteractionState = document.getElementById("frame-interaction-state");
+      const scaleControl = document.getElementById("scale-control");
+      const horizontalControl = document.getElementById("horizontal-control");
+      const verticalControl = document.getElementById("vertical-control");
+      const scaleValue = document.getElementById("scale-value");
+      const horizontalValue = document.getElementById("horizontal-value");
+      const verticalValue = document.getElementById("vertical-value");
+      const resetButton = document.getElementById("reset-button");
+      const query = new URLSearchParams(window.location.search);
+      const comparisonMode = query.get("comparison") === "1";
+      const comparisonScale = Math.max(
+        0.55,
+        Math.min(3, (Number(query.get("scale")) || 90) / 100)
+      );
+      const comparisonX = Math.max(
+        -0.4,
+        Math.min(0.4, (Number(query.get("x")) || 0) / 100)
+      );
+      const comparisonY = Math.max(
+        -0.4,
+        Math.min(0.4, (Number(query.get("y")) || 0) / 100)
+      );
+      const immersiveLarge = query.get("immersiveLarge") === "1";
+      document.body.classList.toggle("comparison-mode", comparisonMode);
+
+      if (immersiveLarge) {
+        scenePhoto.src = "../day-night-square-immersive/night-frame-5024.png";
+      }
+
+      const frame = {
+        tl: { x: 0.335, y: 0.3225 },
+        tr: { x: 0.6831, y: 0.3225 },
+        br: { x: 0.6831, y: 0.6744 },
+        bl: { x: 0.3344, y: 0.6744 }
+      };
+      const points = [frame.tl, frame.tr, frame.br, frame.bl];
+      const minX = Math.min(...points.map((point) => point.x));
+      const maxX = Math.max(...points.map((point) => point.x));
+      const minY = Math.min(...points.map((point) => point.y));
+      const maxY = Math.max(...points.map((point) => point.y));
+      const frameWidth = maxX - minX;
+      const frameHeight = maxY - minY;
+      const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+      const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+      const storageKey = "rain-to-moon-night-square-frame-placement";
+
+      let placement = comparisonMode
+        ? { scale: comparisonScale, x: comparisonX, y: comparisonY }
+        : loadPlacement();
+
+      window.rainInteractionChanged = (active) => {
+        frameInteractionState.textContent = active
+          ? "Night rain is returning · the moonlit field is receding."
+          : "Rain is clearing · the moon and fireflies are waking.";
+      };
+
+      stage.addEventListener("click", () => {
+        if (typeof window.rainToggle === "function") window.rainToggle();
+      });
+
+      stage.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (typeof window.rainToggle === "function") window.rainToggle();
+        }
+      });
+
+      window.addEventListener("message", (event) => {
+        if (
+          event.data &&
+          event.data.type === "rain-comparison-toggle" &&
+          typeof window.rainToggle === "function"
+        ) {
+          window.rainToggle();
+        }
+        if (event.data && event.data.type === "rain-reset-scene") {
+          if (typeof window.rainResetScene === "function") {
+            window.rainResetScene();
+          }
+        }
+        if (event.data && event.data.type === "rain-export-video") {
+          window.exportRevealVideo()
+            .then((result) => {
+              window.parent.postMessage({
+                type: "rain-export-complete",
+                requestId: event.data.requestId,
+                result
+              }, "*");
+            })
+            .catch((error) => {
+              window.parent.postMessage({
+                type: "rain-export-error",
+                requestId: event.data.requestId,
+                message: error.message
+              }, "*");
+            });
+        }
+      });
+
+      function loadPlacement() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey));
+          if (
+            saved &&
+            Number.isFinite(saved.scale) &&
+            Number.isFinite(saved.x) &&
+            Number.isFinite(saved.y)
+          ) {
+            return {
+              scale: Math.max(0.55, Math.min(3, saved.scale)),
+              x: Math.max(-0.4, Math.min(0.4, saved.x)),
+              y: Math.max(-0.4, Math.min(0.4, saved.y))
+            };
+          }
+        } catch (error) {
+          // Use the centered placement when storage is unavailable.
+        }
+        return { scale: 1.5, x: 0, y: 0 };
+      }
+
+      function savePlacement() {
+        if (comparisonMode) return;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(placement));
+        } catch (error) {
+          // The controls still work during the current visit.
+        }
+      }
+
+      function applyFrameMask() {
+        frameMask.style.clipPath = `polygon(${points
+          .map((point) => `${point.x * 100}% ${point.y * 100}%`)
+          .join(", ")})`;
+      }
+
+      function applyPlacement() {
+        const left = centerX + placement.x * frameWidth;
+        const top = centerY + placement.y * frameHeight;
+        const width = frameWidth * placement.scale;
+        nightWrap.style.left = `${left * 100}%`;
+        nightWrap.style.top = `${top * 100}%`;
+        nightWrap.style.width = `${width * 100}%`;
+
+        scaleControl.value = String(Math.round(placement.scale * 100));
+        horizontalControl.value = String(Math.round(placement.x * 100));
+        verticalControl.value = String(Math.round(placement.y * 100));
+        scaleValue.textContent = `${Math.round(placement.scale * 100)}%`;
+        horizontalValue.textContent = `${Math.round(placement.x * 100)}%`;
+        verticalValue.textContent = `${Math.round(placement.y * 100)}%`;
+        savePlacement();
+      }
+
+      function updateFromControls() {
+        placement = {
+          scale: Number(scaleControl.value) / 100,
+          x: Number(horizontalControl.value) / 100,
+          y: Number(verticalControl.value) / 100
+        };
+        applyPlacement();
+      }
+
+      [scaleControl, horizontalControl, verticalControl].forEach((control) => {
+        control.addEventListener("input", updateFromControls);
+      });
+
+      resetButton.addEventListener("click", () => {
+        placement = { scale: 1.5, x: 0, y: 0 };
+        applyPlacement();
+      });
+
+      applyFrameMask();
+      applyPlacement();
+
+      window.exportRevealVideo = window.createFramedVideoExporter({
+        photo: scenePhoto,
+        photoData: window.EMBEDDED_FRAME_PHOTO,
+        sourceCanvas: () => document.querySelector("#sketch-holder canvas"),
+        frame,
+        placement: () => placement,
+        composite: "source-over",
+        drawFallbackBackground: (context, width, height) => {
+          const gradient = context.createLinearGradient(0, 0, 0, height);
+          gradient.addColorStop(0, "rgb(7, 10, 23)");
+          gradient.addColorStop(0.5, "rgb(14, 22, 45)");
+          gradient.addColorStop(1, "rgb(7, 13, 28)");
+          context.fillStyle = gradient;
+          context.fillRect(0, 0, width, height);
+        },
+        fallbackComposite: "source-over",
+        reset: () => window.rainResetScene(),
+        reveal: () => {
+          if (window.rainIsActive()) window.rainToggle();
+        },
+        fileName: "after-rain-night-reveal-1254px-60fps"
+      });
+    </script>
+  </body>
+</html>

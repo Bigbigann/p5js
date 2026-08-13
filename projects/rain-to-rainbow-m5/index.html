@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>After rain · M5</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --surround: #e3ded2;
+        --paper: #efebe1;
+        --ink: #3b3933;
+        --muted: #777064;
+        --red: #ca432d;
+        --line: rgba(59, 57, 51, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: clamp(14px, 3vw, 38px);
+        color: var(--ink);
+        background: var(--surround);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .workspace {
+        width: min(100%, 1110px);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 720px) minmax(250px, 320px);
+        gap: clamp(20px, 3vw, 38px);
+        align-items: start;
+      }
+
+      main {
+        background: var(--paper);
+        box-shadow: 0 20px 58px rgba(47, 40, 30, 0.16);
+        cursor: pointer;
+      }
+
+      #sketch-holder,
+      #sketch-holder canvas {
+        display: block;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      aside {
+        padding: 24px 22px 26px;
+        background: rgba(239, 235, 225, 0.88);
+        border-top: 2px solid var(--red);
+        box-shadow: 0 12px 32px rgba(42, 39, 32, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .status {
+        margin: 0 0 18px;
+        color: #91402f;
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .instruction {
+        margin: 0 0 20px;
+        font-size: 13px;
+        font-style: italic;
+        line-height: 1.55;
+      }
+
+      .milestones {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .milestone {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .milestone-number {
+        color: var(--muted);
+        font: 600 10px/1.5 Arial, sans-serif;
+        letter-spacing: 0.08em;
+      }
+
+      .milestone strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .milestone span:last-child {
+        color: var(--muted);
+        font: 11px/1.45 Arial, sans-serif;
+      }
+
+      .milestone.current strong,
+      .milestone.current .milestone-number {
+        color: var(--red);
+      }
+
+      .note {
+        margin: 17px 0 0;
+        color: var(--muted);
+        font: 11px/1.5 Arial, sans-serif;
+      }
+
+      @media (max-width: 880px) {
+        .workspace {
+          width: min(100%, 680px);
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        body { padding: 0; }
+        main,
+        aside { box-shadow: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="workspace">
+      <main
+        id="weather-study"
+        aria-label="Static study of a luminous cloud and a narrow column of rain."
+      >
+        <div id="sketch-holder"></div>
+      </main>
+
+      <aside>
+        <h1>After rain</h1>
+        <p class="status">M5 · Atmosphere and polish</p>
+        <p class="instruction">
+          Click the artwork to clear the rain. As the last drops leave, a muted
+          rainbow emerges above, followed by gently swaying grass and small
+          flowers near the bottom, with open space separating the two.
+        </p>
+
+        <ol class="milestones" aria-label="Project milestones">
+          <li class="milestone">
+            <span class="milestone-number">01</span>
+            <span>
+              <strong>Static rainy composition</strong>
+              <span>Approved in M1</span>
+            </span>
+          </li>
+          <li class="milestone">
+            <span class="milestone-number">02</span>
+            <span>
+              <strong>Rain movement</strong>
+              <span>Approved in M2</span>
+            </span>
+          </li>
+          <li class="milestone">
+            <span class="milestone-number">03</span>
+            <span>
+              <strong>Rain-stop interaction</strong>
+              <span>Approved in M3</span>
+            </span>
+          </li>
+          <li class="milestone">
+            <span class="milestone-number">04</span>
+            <span>
+              <strong>Rainbow reveal</strong>
+              <span>Approved in M4</span>
+            </span>
+          </li>
+          <li class="milestone current">
+            <span class="milestone-number">05</span>
+            <span>
+              <strong>Atmosphere and polish</strong>
+              <span>In progress · ground growth, wind, and final balance</span>
+            </span>
+          </li>
+        </ol>
+
+        <p id="interaction-state" class="note">
+          Rain is falling · click to reveal the living landscape.
+        </p>
+      </aside>
+    </div>
+
+    <script src="../journey-work-m3-frame/p5.min.js"></script>
+    <script src="sketch.js"></script>
+    <script>
+      const interactionState = document.getElementById("interaction-state");
+      window.rainInteractionChanged = (active) => {
+        interactionState.textContent = active
+          ? "Rain is returning · the landscape is receding."
+          : "Rain is clearing · colour and ground life will emerge.";
+      };
+    </script>
+  </body>
+</html>

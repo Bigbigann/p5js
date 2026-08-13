@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>After rain · Square framed view</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --surround: #e4dfd3;
+        --paper: #efebe1;
+        --ink: #38342d;
+        --muted: #777064;
+        --red: #ca432d;
+        --line: rgba(56, 52, 45, 0.18);
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: clamp(16px, 3vw, 40px);
+        color: var(--ink);
+        background: var(--surround);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .workspace {
+        width: min(100%, 1120px);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 720px) minmax(250px, 320px);
+        gap: clamp(20px, 3vw, 38px);
+        align-items: start;
+      }
+
+      .photo-stage {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background: var(--paper);
+        box-shadow: 0 22px 58px rgba(45, 39, 29, 0.18);
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .scene-photo {
+        display: block;
+        width: 100%;
+        height: auto;
+        pointer-events: none;
+      }
+
+      #frame-mask {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .weather-wrap {
+        position: absolute;
+        aspect-ratio: 900 / 1120;
+        transform: translate(-50%, -50%);
+        transform-origin: center;
+        pointer-events: none;
+      }
+
+      #rain-wrap {
+        mix-blend-mode: multiply;
+      }
+
+      #cloud-wrap {
+        opacity: 0.56;
+        mix-blend-mode: soft-light;
+      }
+
+      #sketch-holder {
+        position: absolute;
+        inset: 0;
+      }
+
+      #sketch-holder,
+      #sketch-holder canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        pointer-events: none;
+      }
+
+      .cloud-layer {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      aside {
+        padding: 24px 22px 26px;
+        background: rgba(239, 235, 225, 0.88);
+        border-top: 2px solid var(--red);
+        box-shadow: 0 12px 32px rgba(42, 39, 32, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .status {
+        margin: 0 0 18px;
+        color: #91402f;
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .instruction {
+        margin: 0 0 18px;
+        font-size: 13px;
+        font-style: italic;
+        line-height: 1.55;
+      }
+
+      .control-group {
+        padding: 15px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .range-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 7px;
+        font: 600 11px/1.4 Arial, sans-serif;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .range-value {
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--red);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button,
+      a.button {
+        appearance: none;
+        display: inline-block;
+        padding: 9px 12px;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid rgba(56, 52, 45, 0.28);
+        border-radius: 999px;
+        font: 12px/1 Arial, sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      a.button.primary {
+        color: #fffaf1;
+        background: var(--red);
+        border-color: var(--red);
+      }
+
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible {
+        outline: 2px solid rgba(202, 67, 45, 0.5);
+        outline-offset: 2px;
+      }
+
+      .note {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font: 11px/1.5 Arial, sans-serif;
+      }
+
+      @media (max-width: 880px) {
+        .workspace {
+          width: min(100%, 680px);
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        body { padding: 0; }
+        .photo-stage,
+        aside { box-shadow: none; }
+      }
+
+      body.comparison-mode {
+        min-height: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      body.comparison-mode .workspace {
+        display: block;
+        width: 100%;
+      }
+
+      body.comparison-mode aside { display: none; }
+      body.comparison-mode .photo-stage { box-shadow: none; }
+    </style>
+  </head>
+  <body>
+    <div class="workspace">
+      <main
+        id="photo-stage"
+        class="photo-stage"
+        role="button"
+        tabindex="0"
+          aria-label="Interactive rain and rainbow study placed inside a square wooden frame"
+      >
+        <img
+          class="scene-photo"
+          src="./frame-photo-square.png"
+          alt="Square wooden picture frame on a softly lit wall"
+        />
+        <div id="frame-mask">
+          <div id="rain-wrap" class="weather-wrap">
+            <div id="sketch-holder"></div>
+          </div>
+          <div id="cloud-wrap" class="weather-wrap">
+            <svg
+              class="cloud-layer"
+              viewBox="0 0 900 1120"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                transform="translate(266 178) scale(2)"
+                d="M91.5 0C103.809 0 114.612 6.35351 120.718 15.9141C121.862 17.7053 124.102 18.5324 126.153 17.9752C128.492 17.3398 130.955 17 133.5 17C146.906 17 158.07 26.418 160.506 38.8826C160.797 40.3742 161.775 41.6593 163.157 42.2926C175.465 47.9345 184 60.2336 184 74.5C184 94.1061 167.882 110 148 110C137.057 110 127.256 105.184 120.654 97.5858C118.939 95.6127 115.826 95.3357 113.792 96.978C107.585 101.991 99.6493 105 91 105C82.8023 105 75.245 102.298 69.1933 97.7474C67.2198 96.2636 64.3383 96.5286 62.6666 98.3457C56.0808 105.504 46.5735 110 36 110C16.1177 110 0 94.1061 0 74.5C0 59.3651 9.60519 46.4439 23.1318 41.3369C24.4941 27.6752 36.2274 17 50.5 17C52.7882 17 55.0111 17.2743 57.1365 17.7914C59.1363 18.2778 61.2812 17.46 62.4 15.7326C68.5261 6.27339 79.2689 0 91.5 0Z"
+                fill="#f8f7f1"
+              />
+            </svg>
+          </div>
+        </div>
+      </main>
+
+      <aside>
+        <h1>After rain · square frame</h1>
+        <p class="status">Alternate frame · M5 atmosphere and polish</p>
+        <p class="instruction">
+          This alternate frame uses the same M5 animation and settings.
+          Click the photograph to clear the rain and reveal the rainbow and
+          living ground.
+        </p>
+
+        <div class="control-group">
+          <label class="range-label" for="scale-control">
+            Scale
+            <span id="scale-value" class="range-value">150%</span>
+          </label>
+          <input
+            id="scale-control"
+            type="range"
+            min="55"
+            max="300"
+            step="1"
+            value="150"
+          />
+        </div>
+
+        <div class="control-group">
+          <label class="range-label" for="horizontal-control">
+            Horizontal
+            <span id="horizontal-value" class="range-value">0%</span>
+          </label>
+          <input
+            id="horizontal-control"
+            type="range"
+            min="-40"
+            max="40"
+            step="1"
+            value="0"
+          />
+        </div>
+
+        <div class="control-group">
+          <label class="range-label" for="vertical-control">
+            Vertical
+            <span id="vertical-value" class="range-value">0%</span>
+          </label>
+          <input
+            id="vertical-control"
+            type="range"
+            min="-40"
+            max="40"
+            step="1"
+            value="0"
+          />
+        </div>
+
+        <div class="control-group actions">
+          <a class="button primary" href="../rain-to-rainbow-m5/index.html">
+            View isolation
+          </a>
+          <button id="reset-button" type="button">Reset placement</button>
+        </div>
+
+        <p id="frame-interaction-state" class="note">
+          Rain is falling · click to reveal the living landscape.
+        </p>
+      </aside>
+    </div>
+
+    <script>
+      window.RAIN_PRESENTATION_MODE = "frame";
+    </script>
+    <script src="../journey-work-m3-frame/p5.min.js"></script>
+    <script src="../rain-to-rainbow-m5/sketch.js?v=20260805-video-export"></script>
+    <script src="../shared/framed-video-export.js?v=20260806-full-frame-export"></script>
+    <script>
+      const stage = document.getElementById("photo-stage");
+      const scenePhoto = document.querySelector(".scene-photo");
+      const frameInteractionState = document.getElementById(
+        "frame-interaction-state"
+      );
+      const frameMask = document.getElementById("frame-mask");
+      const cloudWrap = document.getElementById("cloud-wrap");
+      const weatherWraps = [
+        document.getElementById("rain-wrap"),
+        cloudWrap
+      ];
+      const scaleControl = document.getElementById("scale-control");
+      const horizontalControl = document.getElementById("horizontal-control");
+      const verticalControl = document.getElementById("vertical-control");
+      const scaleValue = document.getElementById("scale-value");
+      const horizontalValue = document.getElementById("horizontal-value");
+      const verticalValue = document.getElementById("vertical-value");
+      const resetButton = document.getElementById("reset-button");
+      const query = new URLSearchParams(window.location.search);
+      const comparisonMode = query.get("comparison") === "1";
+      const comparisonScale = Math.max(
+        0.55,
+        Math.min(3, (Number(query.get("scale")) || 90) / 100)
+      );
+      const immersiveOriginal = query.get("immersiveOriginal") === "1";
+      const immersiveLarge = query.get("immersiveLarge") === "1";
+      document.body.classList.toggle("comparison-mode", comparisonMode);
+
+      if (immersiveLarge) {
+        scenePhoto.src = "../day-night-square-immersive/day-frame-4096.png";
+      } else if (immersiveOriginal) {
+        scenePhoto.src = "../day-night-square-immersive/day-frame-original.png";
+      }
+
+      const frame = immersiveLarge
+        ? {
+            tl: { x: 0.349, y: 0.335 },
+            tr: { x: 0.664, y: 0.335 },
+            br: { x: 0.664, y: 0.67 },
+            bl: { x: 0.349, y: 0.67 }
+          }
+        : immersiveOriginal
+        ? {
+            tl: { x: 0.3486, y: 0.335 },
+            tr: { x: 0.6631, y: 0.335 },
+            br: { x: 0.6631, y: 0.6709 },
+            bl: { x: 0.3486, y: 0.6709 }
+          }
+        : {
+            tl: { x: 0.335, y: 0.3225 },
+            tr: { x: 0.6831, y: 0.3225 },
+            br: { x: 0.6831, y: 0.6744 },
+            bl: { x: 0.3344, y: 0.6744 }
+          };
+      const points = [frame.tl, frame.tr, frame.br, frame.bl];
+      const minX = Math.min(...points.map((point) => point.x));
+      const maxX = Math.max(...points.map((point) => point.x));
+      const minY = Math.min(...points.map((point) => point.y));
+      const maxY = Math.max(...points.map((point) => point.y));
+      const frameWidth = maxX - minX;
+      const frameHeight = maxY - minY;
+      const centerX =
+        points.reduce((sum, point) => sum + point.x, 0) / points.length;
+      const centerY =
+        points.reduce((sum, point) => sum + point.y, 0) / points.length;
+      const storageKey = "rain-to-rainbow-square-frame-placement";
+
+      let placement = comparisonMode
+        ? { scale: comparisonScale, x: 0, y: 0 }
+        : loadPlacement();
+      let currentCloudOpacity = 0.56;
+
+      window.rainInteractionChanged = (active) => {
+        frameInteractionState.textContent = active
+          ? "Rain is returning · the landscape is receding."
+          : "Rain is clearing · colour and ground life will emerge.";
+      };
+
+      window.rainCloudOpacityChanged = (amount) => {
+        currentCloudOpacity = 0.56 * Math.max(0, Math.min(1, amount));
+        cloudWrap.style.opacity = String(currentCloudOpacity);
+      };
+
+      stage.addEventListener("click", () => {
+        if (typeof window.rainToggle === "function") window.rainToggle();
+      });
+
+      stage.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (typeof window.rainToggle === "function") window.rainToggle();
+        }
+      });
+
+      window.addEventListener("message", (event) => {
+        if (
+          event.data &&
+          event.data.type === "rain-comparison-toggle" &&
+          typeof window.rainToggle === "function"
+        ) {
+          window.rainToggle();
+        }
+        if (event.data && event.data.type === "rain-reset-scene") {
+          if (typeof window.rainResetScene === "function") {
+            window.rainResetScene();
+          }
+        }
+        if (event.data && event.data.type === "rain-export-video") {
+          window.exportRevealVideo()
+            .then((result) => {
+              window.parent.postMessage({
+                type: "rain-export-complete",
+                requestId: event.data.requestId,
+                result
+              }, "*");
+            })
+            .catch((error) => {
+              window.parent.postMessage({
+                type: "rain-export-error",
+                requestId: event.data.requestId,
+                message: error.message
+              }, "*");
+            });
+        }
+      });
+
+      function loadPlacement() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey));
+          if (
+            saved &&
+            Number.isFinite(saved.scale) &&
+            Number.isFinite(saved.x) &&
+            Number.isFinite(saved.y)
+          ) {
+            return {
+              scale: Math.max(0.55, Math.min(3, saved.scale)),
+              x: Math.max(-0.4, Math.min(0.4, saved.x)),
+              y: Math.max(-0.4, Math.min(0.4, saved.y))
+            };
+          }
+        } catch (error) {
+          // Fall back to the centered placement.
+        }
+        return { scale: 1.5, x: 0, y: 0 };
+      }
+
+      function savePlacement() {
+        if (comparisonMode) return;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(placement));
+        } catch (error) {
+          // Controls still work for the current visit.
+        }
+      }
+
+      function applyFrameMask() {
+        const polygon = points
+          .map((point) => `${point.x * 100}% ${point.y * 100}%`)
+          .join(", ");
+        frameMask.style.clipPath = `polygon(${polygon})`;
+      }
+
+      function applyPlacement() {
+        const left = centerX + placement.x * frameWidth;
+        const top = centerY + placement.y * frameHeight;
+        const width = frameWidth * placement.scale;
+
+        weatherWraps.forEach((wrap) => {
+          wrap.style.left = `${left * 100}%`;
+          wrap.style.top = `${top * 100}%`;
+          wrap.style.width = `${width * 100}%`;
+        });
+
+        scaleControl.value = String(Math.round(placement.scale * 100));
+        horizontalControl.value = String(Math.round(placement.x * 100));
+        verticalControl.value = String(Math.round(placement.y * 100));
+        scaleValue.textContent = `${Math.round(placement.scale * 100)}%`;
+        horizontalValue.textContent = `${Math.round(placement.x * 100)}%`;
+        verticalValue.textContent = `${Math.round(placement.y * 100)}%`;
+        savePlacement();
+      }
+
+      function updateFromControls() {
+        placement = {
+          scale: Number(scaleControl.value) / 100,
+          x: Number(horizontalControl.value) / 100,
+          y: Number(verticalControl.value) / 100
+        };
+        applyPlacement();
+      }
+
+      [scaleControl, horizontalControl, verticalControl].forEach((control) => {
+        control.addEventListener("input", updateFromControls);
+      });
+
+      resetButton.addEventListener("click", () => {
+        placement = { scale: 1.5, x: 0, y: 0 };
+        applyPlacement();
+      });
+
+      applyFrameMask();
+      applyPlacement();
+
+      window.exportRevealVideo = window.createFramedVideoExporter({
+        photo: scenePhoto,
+        sourceCanvas: () => document.querySelector("#sketch-holder canvas"),
+        frame,
+        placement: () => placement,
+        composite: "multiply",
+        svgLayer: {
+          element: document.querySelector(".cloud-layer"),
+          composite: "soft-light",
+          alpha: () => currentCloudOpacity
+        },
+        drawFallbackBackground: (context, width, height) => {
+          context.fillStyle = "rgb(224, 219, 208)";
+          context.fillRect(0, 0, width, height);
+        },
+        fallbackComposite: "multiply",
+        reset: () => window.rainResetScene(),
+        reveal: () => {
+          if (window.rainIsActive()) window.rainToggle();
+        },
+        fileName: "after-rain-day-reveal-1600px-60fps"
+      });
+    </script>
+  </body>
+</html>

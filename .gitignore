@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+build/
+dist/
+
+# Working audio iterations; the active equal-power loop is v4.
+projects/day-night-square-immersive/audio/rainfall.mp3
+projects/day-night-square-immersive/audio/rainfall-seamless.wav
+projects/day-night-square-immersive/audio/rainfall-seamless-v2.wav
+projects/day-night-square-immersive/audio/rainfall-seamless-v3.wav

@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>After Rain · Immersive Day and Night</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --switch-width: 84px;
+        --switch-height: 44px;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: #eeeae1;
+        transition: background-color 900ms ease;
+      }
+
+      body[data-scene="night"] { background: #11192c; }
+
+      .scene {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+          visibility 0s linear 900ms;
+      }
+
+      #day-scene {
+        background:
+          #eeeae1
+          url("./day-wall-only-v2.png") center / cover no-repeat;
+      }
+
+      #night-scene {
+        background:
+          #11192c
+          url("./night-wall-only.png") center / cover no-repeat;
+      }
+
+      .scene.is-active {
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+        cursor: pointer;
+      }
+
+      iframe {
+        display: block;
+        border: 0;
+        background: transparent;
+      }
+
+      .day-photo-layer,
+      .night-photo-layer {
+        position: relative;
+        isolation: isolate;
+        -webkit-mask-image: linear-gradient(
+          to right,
+          transparent 0%,
+          rgba(0, 0, 0, 0.2) 4%,
+          #000 15%,
+          #000 85%,
+          rgba(0, 0, 0, 0.2) 96%,
+          transparent 100%
+        );
+        mask-image: linear-gradient(
+          to right,
+          transparent 0%,
+          rgba(0, 0, 0, 0.2) 4%,
+          #000 15%,
+          #000 85%,
+          rgba(0, 0, 0, 0.2) 96%,
+          transparent 100%
+        );
+      }
+
+      .day-photo-layer {
+        width: min(4096px, 100vw, 100vh);
+        height: min(4096px, 100vw, 100vh);
+      }
+
+      .night-photo-layer {
+        width: min(5024px, 91.2vw, 91.2vh);
+        height: min(5024px, 91.2vw, 91.2vh);
+      }
+
+      .day-photo-layer-inner,
+      .night-photo-layer-inner {
+        width: 100%;
+        height: 100%;
+        -webkit-mask-image: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 0, 0, 0.2) 4%,
+          #000 15%,
+          #000 85%,
+          rgba(0, 0, 0, 0.2) 96%,
+          transparent 100%
+        );
+        mask-image: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 0, 0, 0.2) 4%,
+          #000 15%,
+          #000 85%,
+          rgba(0, 0, 0, 0.2) 96%,
+          transparent 100%
+        );
+      }
+
+      #day-scene iframe,
+      #night-scene iframe {
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .control-dock {
+        position: fixed;
+        z-index: 10;
+        left: 50%;
+        bottom: max(18px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .theme-toggle,
+      .sound-toggle {
+        border: 1px solid rgba(70, 59, 46, 0.18);
+        background: rgba(246, 242, 232, 0.54);
+        box-shadow: none;
+        color: #625544;
+        cursor: pointer;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        transition:
+          background-color 700ms ease,
+          border-color 700ms ease,
+          box-shadow 700ms ease,
+          color 700ms ease;
+      }
+
+      .theme-toggle {
+        position: relative;
+        width: var(--switch-width);
+        height: var(--switch-height);
+        padding: 0;
+        border-radius: 999px;
+      }
+
+      .sound-toggle {
+        position: relative;
+        width: var(--switch-height);
+        height: var(--switch-height);
+        padding: 0;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      .sound-toggle[aria-pressed="false"] {
+        color: rgba(98, 85, 68, 0.46);
+      }
+
+      .sound-wave {
+        width: 22px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2.5px;
+      }
+
+      .sound-wave > span {
+        width: 3px;
+        height: 12px;
+        border-radius: 999px;
+        background: currentColor;
+        transform: scaleY(0.25);
+        transform-origin: center;
+        will-change: transform;
+      }
+
+      .sound-toggle[data-sound-active="true"] .sound-wave > span {
+        animation: sound-wave 1.05s ease-in-out infinite;
+      }
+
+      .sound-toggle[data-sound-active="true"] .sound-wave > span:nth-child(1) {
+        animation-delay: -0.72s;
+        animation-duration: 1.08s;
+      }
+
+      .sound-toggle[data-sound-active="true"] .sound-wave > span:nth-child(2) {
+        animation-delay: -0.35s;
+        animation-duration: 0.92s;
+      }
+
+      .sound-toggle[data-sound-active="true"] .sound-wave > span:nth-child(3) {
+        animation-delay: -0.58s;
+        animation-duration: 1.18s;
+      }
+
+      .sound-toggle[data-sound-active="true"] .sound-wave > span:nth-child(4) {
+        animation-delay: -0.18s;
+        animation-duration: 0.98s;
+      }
+
+      @keyframes sound-wave {
+        0%, 100% { transform: scaleY(0.25); }
+        28% { transform: scaleY(0.95); }
+        54% { transform: scaleY(0.42); }
+        76% { transform: scaleY(0.72); }
+      }
+
+      body[data-scene="night"] .theme-toggle,
+      body[data-scene="night"] .sound-toggle {
+        border-color: rgba(220, 228, 247, 0.16);
+        background: rgba(22, 31, 51, 0.6);
+        box-shadow: none;
+        color: #dbe4f4;
+      }
+
+      body[data-scene="night"] .sound-toggle[aria-pressed="false"] {
+        color: rgba(219, 228, 244, 0.42);
+      }
+
+      .theme-toggle::before {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 5px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(255, 250, 233, 0.94);
+        box-shadow: none;
+        transition:
+          transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1),
+          background-color 700ms ease,
+          box-shadow 700ms ease;
+      }
+
+      body[data-scene="night"] .theme-toggle::before {
+        transform: translateX(40px);
+        background: rgba(91, 103, 128, 0.74);
+        box-shadow: none;
+      }
+
+      .icon {
+        position: absolute;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        transform: translateY(-50%);
+        font: 16px/1 system-ui, sans-serif;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .icon svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        fill: currentColor;
+      }
+
+      .icon svg path {
+        stroke: currentColor;
+        stroke-width: 18px;
+        stroke-linejoin: round;
+        paint-order: stroke fill;
+      }
+
+      .sun svg { transform: translate(-0.5px, -1px); }
+      .moon svg { transform: translateX(1px); }
+
+      .sun { left: 5px; color: #765f45; }
+      .moon { right: 5px; color: #95846f; }
+
+      body[data-scene="night"] .sun { color: #8f9298; }
+      body[data-scene="night"] .moon { color: #bfc4ce; }
+
+      .theme-toggle:focus-visible,
+      .sound-toggle:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 4px;
+      }
+
+      .sound-cursor-pill {
+        position: fixed;
+        z-index: 20;
+        left: 0;
+        top: 0;
+        padding: 8px 12px;
+        border: 1px solid rgba(70, 59, 46, 0.16);
+        border-radius: 999px;
+        background: rgba(246, 242, 232, 0.78);
+        color: #555551;
+        font: 500 12px/1 system-ui, sans-serif;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transform: translate(16px, 16px);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        transition: opacity 180ms ease;
+      }
+
+      .sound-cursor-pill.is-visible { opacity: 1; }
+
+      body[data-scene="night"] .sound-cursor-pill {
+        border-color: rgba(220, 228, 247, 0.15);
+        background: rgba(22, 31, 51, 0.76);
+        color: #d8d9dc;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body,
+        .scene,
+        .theme-toggle,
+        .sound-toggle,
+        .theme-toggle::before { transition-duration: 0.01ms; }
+
+        .sound-toggle[data-sound-active="true"] .sound-wave > span {
+          animation: none;
+          transform: scaleY(0.45);
+        }
+      }
+    </style>
+  </head>
+  <body data-scene="day">
+    <main>
+      <section
+        id="day-scene"
+        class="scene is-active"
+        role="button"
+        tabindex="0"
+        aria-label="Reveal the day scene"
+        aria-hidden="false"
+      >
+        <div class="day-photo-layer">
+          <div class="day-photo-layer-inner">
+            <iframe
+              title="Day rain-to-rainbow framed scene"
+              src="../rain-to-rainbow-m5-frame-square/index.html?comparison=1&amp;scale=90&amp;immersive=1&amp;immersiveLarge=1&amp;export=20260810-4096-image"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="night-scene"
+        class="scene"
+        role="button"
+        tabindex="-1"
+        aria-label="Reveal the night scene"
+        aria-hidden="true"
+      >
+        <div class="night-photo-layer">
+          <div class="night-photo-layer-inner">
+            <iframe
+              title="Night rain-to-moon framed scene"
+              src="../rain-to-moon-night-m1-frame/index.html?comparison=1&amp;scale=89.1469&amp;x=-0.465388&amp;y=1.21945&amp;immersive=1&amp;immersiveLarge=1&amp;motion=20260803-direct-fade&amp;export=20260810-5024-image"
+              tabindex="-1"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="control-dock" aria-label="Scene controls">
+      <button
+        id="theme-toggle"
+        class="theme-toggle"
+        type="button"
+        aria-label="Switch to night"
+        aria-pressed="false"
+      >
+        <span class="icon sun" aria-hidden="true">
+          <svg viewBox="0 -960 960 960" focusable="false">
+            <path d="M440-800v-120h80v120h-80Zm0 760v-120h80v120h-80Zm360-400v-80h120v80H800Zm-760 0v-80h120v80H40Zm708-252-56-56 70-72 58 58-72 70ZM198-140l-58-58 72-70 56 56-70 72Zm564 0-70-72 56-56 72 70-58 58ZM212-692l-72-70 58-58 70 72-56 56Zm98 382q-70-70-70-170t70-170q70-70 170-70t170 70q70 70 70 170t-70 170q-70 70-170 70t-170-70Zm283.5-56.5Q640-413 640-480t-46.5-113.5Q547-640 480-640t-113.5 46.5Q320-547 320-480t46.5 113.5Q413-320 480-320t113.5-46.5ZM480-480Z"/>
+          </svg>
+        </span>
+        <span class="icon moon" aria-hidden="true">
+          <svg viewBox="0 -960 960 960" focusable="false">
+            <path d="M484-80q-84 0-157.5-32t-128-86.5Q144-253 112-326.5T80-484q0-146 93-257.5T410-880q-18 99 11 193.5T521-521q71 71 165.5 100T880-410q-26 144-138 237T484-80Zm0-80q88 0 163-44t118-121q-86-8-163-43.5T464-465q-61-61-97-138t-43-163q-77 43-120.5 118.5T160-484q0 135 94.5 229.5T484-160Zm-20-305Z"/>
+          </svg>
+        </span>
+      </button>
+      <button
+        id="sound-toggle"
+        class="sound-toggle"
+        type="button"
+        aria-label="Mute ambience"
+        aria-pressed="true"
+        data-sound-active="false"
+      >
+        <span class="sound-wave" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+      </button>
+    </div>
+
+    <div id="sound-cursor-pill" class="sound-cursor-pill" aria-hidden="true">
+      Click inside the frame
+    </div>
+
+    <audio
+      id="rain-audio"
+      src="./audio/rainfall-seamless-v4.wav"
+      loop
+      preload="auto"
+      playsinline
+    ></audio>
+    <audio
+      id="breeze-audio"
+      src="./audio/gentle-breeze.mp3"
+      loop
+      preload="auto"
+      playsinline
+    ></audio>
+
+    <script>
+      const body = document.body;
+      const toggle = document.getElementById("theme-toggle");
+      const soundToggle = document.getElementById("sound-toggle");
+      const soundCursorPill = document.getElementById("sound-cursor-pill");
+      const dayScene = document.getElementById("day-scene");
+      const nightScene = document.getElementById("night-scene");
+      const dayFrame = dayScene.querySelector("iframe");
+      const nightFrame = nightScene.querySelector("iframe");
+      const rainAudio = document.getElementById("rain-audio");
+      const breezeAudio = document.getElementById("breeze-audio");
+      const rainVolume = 0.42;
+      const breezeVolume = 0.44;
+      let fadeVersion = 0;
+      let soundEnabled = true;
+      let soundUnlocked = false;
+      let raining = true;
+      let firstRevealPending = false;
+      const firstRevealDelay = 2500;
+
+      rainAudio.volume = rainVolume;
+      breezeAudio.volume = 0;
+
+      function crossfadeAmbience(raining, duration = 1600) {
+        const version = ++fadeVersion;
+        const rainStart = rainAudio.volume;
+        const breezeStart = breezeAudio.volume;
+        const rainTarget = soundEnabled && raining ? rainVolume : 0;
+        const breezeTarget = soundEnabled && !raining ? breezeVolume : 0;
+        const startTime = performance.now();
+
+        rainAudio.play().catch(() => {});
+        breezeAudio.play().catch(() => {});
+
+        function update(now) {
+          if (version !== fadeVersion) return;
+          const elapsed = Math.min(1, (now - startTime) / duration);
+          const eased = elapsed * elapsed * (3 - 2 * elapsed);
+          rainAudio.volume = rainStart + (rainTarget - rainStart) * eased;
+          breezeAudio.volume =
+            breezeStart + (breezeTarget - breezeStart) * eased;
+
+          if (elapsed < 1) {
+            requestAnimationFrame(update);
+          } else {
+            if (!soundEnabled) {
+              rainAudio.pause();
+              breezeAudio.pause();
+            } else if (raining) {
+              breezeAudio.pause();
+            } else {
+              rainAudio.pause();
+            }
+          }
+        }
+
+        requestAnimationFrame(update);
+      }
+
+      function toggleActiveScene() {
+        raining = !raining;
+        dayFrame.contentWindow.postMessage(
+          { type: "rain-comparison-toggle" },
+          "*"
+        );
+        nightFrame.contentWindow.postMessage(
+          { type: "rain-comparison-toggle" },
+          "*"
+        );
+        crossfadeAmbience(raining);
+      }
+
+      function getApproximateFrameBounds() {
+        const night = body.dataset.scene === "night";
+        const layer = document.querySelector(
+          night ? ".night-photo-layer" : ".day-photo-layer"
+        );
+        const rect = layer.getBoundingClientRect();
+        const inset = night
+          ? { left: 0.26, right: 0.75, top: 0.25, bottom: 0.76 }
+          : { left: 0.28, right: 0.73, top: 0.27, bottom: 0.74 };
+
+        return {
+          left: rect.left + rect.width * inset.left,
+          right: rect.left + rect.width * inset.right,
+          top: rect.top + rect.height * inset.top,
+          bottom: rect.top + rect.height * inset.bottom
+        };
+      }
+
+      function isInsideApproximateFrame(x, y) {
+        const bounds = getApproximateFrameBounds();
+        return (
+          x >= bounds.left &&
+          x <= bounds.right &&
+          y >= bounds.top &&
+          y <= bounds.bottom
+        );
+      }
+
+      function updateSoundCursor(event) {
+        const shouldShow = soundEnabled && !soundUnlocked;
+        soundCursorPill.style.left = `${event.clientX}px`;
+        soundCursorPill.style.top = `${event.clientY}px`;
+        soundCursorPill.classList.toggle("is-visible", shouldShow);
+      }
+
+      function updateSoundControl() {
+        soundToggle.dataset.soundActive = String(
+          soundEnabled && soundUnlocked
+        );
+      }
+
+      function beginFrameInteraction() {
+        if (firstRevealPending) return;
+
+        if (!soundUnlocked) {
+          soundUnlocked = true;
+          updateSoundControl();
+          firstRevealPending = true;
+          soundCursorPill.classList.remove("is-visible");
+
+          if (soundEnabled) {
+            rainAudio.volume = rainVolume;
+            rainAudio.play().catch(() => {});
+          }
+
+          window.setTimeout(() => {
+            firstRevealPending = false;
+            toggleActiveScene();
+          }, firstRevealDelay);
+          return;
+        }
+
+        soundUnlocked = true;
+        updateSoundControl();
+        soundCursorPill.classList.remove("is-visible");
+        toggleActiveScene();
+      }
+
+      function handleSceneClick(event) {
+        if (!isInsideApproximateFrame(event.clientX, event.clientY)) return;
+        beginFrameInteraction();
+      }
+
+      function handleSceneKeydown(event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          beginFrameInteraction();
+        }
+      }
+
+      function showScene(scene) {
+        const night = scene === "night";
+        body.dataset.scene = scene;
+        dayScene.classList.toggle("is-active", !night);
+        nightScene.classList.toggle("is-active", night);
+        dayScene.setAttribute("aria-hidden", String(night));
+        nightScene.setAttribute("aria-hidden", String(!night));
+        dayScene.tabIndex = night ? -1 : 0;
+        nightScene.tabIndex = night ? 0 : -1;
+        dayFrame.tabIndex = -1;
+        nightFrame.tabIndex = -1;
+        toggle.setAttribute("aria-pressed", String(night));
+        toggle.setAttribute("aria-label", night ? "Switch to day" : "Switch to night");
+      }
+
+      dayScene.addEventListener("click", handleSceneClick);
+      nightScene.addEventListener("click", handleSceneClick);
+      dayScene.addEventListener("keydown", handleSceneKeydown);
+      nightScene.addEventListener("keydown", handleSceneKeydown);
+      window.addEventListener("pointermove", updateSoundCursor);
+      document.addEventListener("pointerleave", () => {
+        soundCursorPill.classList.remove("is-visible");
+      });
+
+      toggle.addEventListener("click", () => {
+        showScene(body.dataset.scene === "day" ? "night" : "day");
+      });
+
+      soundToggle.addEventListener("click", () => {
+        soundEnabled = !soundEnabled;
+        soundToggle.setAttribute("aria-pressed", String(soundEnabled));
+        soundToggle.setAttribute(
+          "aria-label",
+          soundEnabled ? "Mute ambience" : "Play ambience"
+        );
+        updateSoundControl();
+        if (!soundEnabled || soundUnlocked) {
+          crossfadeAmbience(raining, 500);
+        }
+      });
+    </script>
+  </body>
+</html>
