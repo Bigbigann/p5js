@@ -219,7 +219,13 @@
       }
 
       html.comparison-mode aside { display: none; }
-      html.comparison-mode .photo-stage { box-shadow: none; }
+      html.comparison-mode .photo-stage {
+        opacity: 0;
+        box-shadow: none;
+        transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      html.comparison-mode.frame-ready .photo-stage { opacity: 1; }
     </style>
   </head>
   <body>
@@ -323,8 +329,25 @@
       const immersiveLarge = query.get("immersiveLarge") === "1";
       document.body.classList.toggle("comparison-mode", comparisonMode);
 
+      let frameRevealScheduled = false;
+      function revealFrameWhenReady() {
+        if (frameRevealScheduled) return;
+        frameRevealScheduled = true;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.documentElement.classList.add("frame-ready");
+          });
+        });
+      }
+
+      scenePhoto.addEventListener("load", revealFrameWhenReady, { once: true });
+
       if (immersiveLarge) {
-        scenePhoto.src = "../day-night-square-immersive/night-frame-5024.png";
+        scenePhoto.src = "../day-night-square-immersive/night-frame-5024.webp";
+      }
+
+      if (scenePhoto.complete && scenePhoto.naturalWidth > 0) {
+        revealFrameWhenReady();
       }
 
       const frame = {
