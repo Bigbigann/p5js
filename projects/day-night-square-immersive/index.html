@@ -347,8 +347,17 @@
           left: 50% !important;
           top: 50% !important;
           opacity: 0;
+          border-color: rgba(92, 82, 68, 0.1);
+          background: rgba(229, 225, 216, 0.68);
+          color: #625d55;
           transform: translate(-50%, -50%);
           transition: opacity 320ms ease;
+        }
+
+        body[data-scene="night"] .sound-cursor-pill {
+          border-color: rgba(202, 211, 230, 0.09);
+          background: rgba(27, 36, 56, 0.66);
+          color: #c6cbd5;
         }
 
         body:not(.sound-unlocked) .sound-cursor-pill { opacity: 1; }
