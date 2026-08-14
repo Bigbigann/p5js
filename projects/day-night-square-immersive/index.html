@@ -336,6 +336,25 @@
         color: #d8d9dc;
       }
 
+      @media (max-width: 700px) {
+        .day-photo-layer,
+        .night-photo-layer {
+          transform: scale(1.32);
+          transform-origin: center;
+        }
+
+        .sound-cursor-pill {
+          left: 50% !important;
+          top: 50% !important;
+          opacity: 0;
+          transform: translate(-50%, -50%);
+          transition: opacity 320ms ease;
+        }
+
+        body:not(.sound-unlocked) .sound-cursor-pill { opacity: 1; }
+        body.sound-unlocked .sound-cursor-pill { opacity: 0; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         body,
         .scene,
@@ -560,6 +579,7 @@
 
         if (!soundUnlocked) {
           soundUnlocked = true;
+          body.classList.add("sound-unlocked");
           updateSoundControl();
           firstRevealPending = true;
           soundCursorPill.classList.remove("is-visible");
@@ -577,6 +597,7 @@
         }
 
         soundUnlocked = true;
+        body.classList.add("sound-unlocked");
         updateSoundControl();
         soundCursorPill.classList.remove("is-visible");
         toggleActiveScene();
