@@ -3,6 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      if (new URLSearchParams(location.search).get("comparison") === "1") {
+        document.documentElement.classList.add("comparison-mode");
+      }
+    </script>
     <title>After rain · Night square framed view</title>
     <style>
       :root {
@@ -201,6 +206,20 @@
 
       body.comparison-mode aside { display: none; }
       body.comparison-mode .photo-stage { box-shadow: none; }
+
+      html.comparison-mode body {
+        min-height: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      html.comparison-mode .workspace {
+        display: block;
+        width: 100%;
+      }
+
+      html.comparison-mode aside { display: none; }
+      html.comparison-mode .photo-stage { box-shadow: none; }
     </style>
   </head>
   <body>
