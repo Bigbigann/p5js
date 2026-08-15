@@ -507,7 +507,12 @@
     <audio
       id="breeze-audio"
       src="./audio/gentle-breeze.mp3"
-      loop
+      preload="auto"
+      playsinline
+    ></audio>
+    <audio
+      id="breeze-audio-b"
+      src="./audio/gentle-breeze.mp3"
       preload="auto"
       playsinline
     ></audio>
@@ -525,20 +530,18 @@
       const rainAudioB = document.getElementById("rain-audio-b");
       const rainPlayers = [rainAudio, rainAudioB];
       const breezeAudio = document.getElementById("breeze-audio");
-      const rainVolume = 0.09;
-      const breezeVolume = 0.44;
-      const rainLoopOverlap = 2;
-      const rainLoopLead = rainLoopOverlap + 0.2;
+      const breezeAudioB = document.getElementById("breeze-audio-b");
+      const breezePlayers = [breezeAudio, breezeAudioB];
+      const mobileVolumeScale = window.matchMedia("(max-width: 700px)").matches
+        ? 0.75
+        : 1;
+      const rainVolume = 0.09 * mobileVolumeScale;
+      const breezeVolume = 0.44 * mobileVolumeScale;
       let fadeVersion = 0;
       let soundEnabled = true;
       let soundUnlocked = false;
       let raining = true;
       let firstRevealPending = false;
-      let rainMixVolume = rainVolume;
-      let activeRainPlayer = 0;
-      let rainPlayerWeights = [1, 0];
-      let rainLoopTransitioning = false;
-      let rainLoopMonitorFrame = 0;
       const firstRevealDelay = 2500;
 
       function revealEmbeddedFrame(frame) {
@@ -561,145 +564,164 @@
         }
       });
 
-      function applyRainVolumes() {
-        rainPlayers.forEach((player, index) => {
-          player.volume = Math.min(
-            1,
-            Math.max(0, rainMixVolume * rainPlayerWeights[index])
-          );
-        });
-      }
+      function createOverlappingLoop(players, overlap, initialVolume = 0) {
+        const lead = overlap + 0.2;
+        let mixVolume = initialVolume;
+        let activePlayer = 0;
+        let playerWeights = [1, 0];
+        let transitioning = false;
+        let monitorFrame = 0;
 
-      function setRainMixVolume(volume) {
-        rainMixVolume = volume;
-        applyRainVolumes();
-      }
-
-      function settleRainPlayers() {
-        const nextActive = rainPlayerWeights[1] > rainPlayerWeights[0] ? 1 : 0;
-        activeRainPlayer = nextActive;
-        rainPlayerWeights = nextActive === 0 ? [1, 0] : [0, 1];
-        rainLoopTransitioning = false;
-
-        rainPlayers.forEach((player, index) => {
-          if (index !== nextActive) {
-            player.pause();
-            player.currentTime = 0;
-          }
-        });
-        applyRainVolumes();
-      }
-
-      function stopRainPlayback() {
-        settleRainPlayers();
-        rainPlayers[activeRainPlayer].pause();
-      }
-
-      function beginRainLoopTransition() {
-        if (rainLoopTransitioning) return;
-        rainLoopTransitioning = true;
-
-        const outgoingIndex = activeRainPlayer;
-        const incomingIndex = outgoingIndex === 0 ? 1 : 0;
-        const outgoing = rainPlayers[outgoingIndex];
-        const incoming = rainPlayers[incomingIndex];
-        const transitionStart = performance.now();
-
-        incoming.currentTime = 0;
-        incoming.play().catch(() => {});
-
-        function updateRainLoop(now) {
-          if (!rainLoopTransitioning) return;
-
-          const progress = Math.min(
-            1,
-            (now - transitionStart) / (rainLoopOverlap * 1000)
-          );
-          const angle = progress * Math.PI * 0.5;
-          rainPlayerWeights[outgoingIndex] = Math.cos(angle);
-          rainPlayerWeights[incomingIndex] = Math.sin(angle);
-          applyRainVolumes();
-
-          if (progress < 1) {
-            requestAnimationFrame(updateRainLoop);
-            return;
-          }
-
-          outgoing.pause();
-          outgoing.currentTime = 0;
-          activeRainPlayer = incomingIndex;
-          rainPlayerWeights = incomingIndex === 0 ? [1, 0] : [0, 1];
-          rainLoopTransitioning = false;
-          applyRainVolumes();
+        function applyVolumes() {
+          players.forEach((player, index) => {
+            player.volume = Math.min(
+              1,
+              Math.max(0, mixVolume * playerWeights[index])
+            );
+          });
         }
 
-        requestAnimationFrame(updateRainLoop);
-      }
+        function setVolume(volume) {
+          mixVolume = volume;
+          applyVolumes();
+        }
 
-      function monitorRainLoop() {
-        if (
-          soundEnabled &&
-          soundUnlocked &&
-          raining &&
-          !rainPlayers[activeRainPlayer].paused
-        ) {
-          const active = rainPlayers[activeRainPlayer];
+        function settlePlayers() {
+          const nextActive = playerWeights[1] > playerWeights[0] ? 1 : 0;
+          activePlayer = nextActive;
+          playerWeights = nextActive === 0 ? [1, 0] : [0, 1];
+          transitioning = false;
+
+          players.forEach((player, index) => {
+            if (index !== nextActive) {
+              player.pause();
+              player.currentTime = 0;
+            }
+          });
+          applyVolumes();
+        }
+
+        function stop() {
+          settlePlayers();
+          players[activePlayer].pause();
+        }
+
+        function beginLoopTransition() {
+          if (transitioning) return;
+          transitioning = true;
+
+          const outgoingIndex = activePlayer;
+          const incomingIndex = outgoingIndex === 0 ? 1 : 0;
+          const outgoing = players[outgoingIndex];
+          const incoming = players[incomingIndex];
+          const transitionStart = performance.now();
+
+          incoming.currentTime = 0;
+          incoming.play().catch(() => {});
+
+          function updateLoop(now) {
+            if (!transitioning) return;
+
+            const progress = Math.min(
+              1,
+              (now - transitionStart) / (overlap * 1000)
+            );
+            const angle = progress * Math.PI * 0.5;
+            playerWeights[outgoingIndex] = Math.cos(angle);
+            playerWeights[incomingIndex] = Math.sin(angle);
+            applyVolumes();
+
+            if (progress < 1) {
+              requestAnimationFrame(updateLoop);
+              return;
+            }
+
+            outgoing.pause();
+            outgoing.currentTime = 0;
+            activePlayer = incomingIndex;
+            playerWeights = incomingIndex === 0 ? [1, 0] : [0, 1];
+            transitioning = false;
+            applyVolumes();
+          }
+
+          requestAnimationFrame(updateLoop);
+        }
+
+        function monitorLoop() {
+          const active = players[activePlayer];
+          if (!active.paused) {
+            if (
+              !transitioning &&
+              Number.isFinite(active.duration) &&
+              active.duration - active.currentTime <= lead
+            ) {
+              beginLoopTransition();
+            }
+            monitorFrame = requestAnimationFrame(monitorLoop);
+          } else {
+            monitorFrame = 0;
+          }
+        }
+
+        function start() {
+          const active = players[activePlayer];
           if (
-            !rainLoopTransitioning &&
-            Number.isFinite(active.duration) &&
-            active.duration - active.currentTime <= rainLoopLead
+            active.ended ||
+            (Number.isFinite(active.duration) &&
+              active.currentTime >= active.duration - 0.05)
           ) {
-            beginRainLoopTransition();
+            active.currentTime = 0;
           }
-          rainLoopMonitorFrame = requestAnimationFrame(monitorRainLoop);
-        } else {
-          rainLoopMonitorFrame = 0;
+          active.play().catch(() => {});
+          if (!monitorFrame) {
+            monitorFrame = requestAnimationFrame(monitorLoop);
+          }
         }
+
+        applyVolumes();
+        return {
+          get volume() {
+            return mixVolume;
+          },
+          setVolume,
+          start,
+          stop
+        };
       }
 
-      function startRainPlayback() {
-        const active = rainPlayers[activeRainPlayer];
-        if (active.ended || active.currentTime >= active.duration - 0.05) {
-          active.currentTime = 0;
-        }
-        active.play().catch(() => {});
-        if (!rainLoopMonitorFrame) {
-          rainLoopMonitorFrame = requestAnimationFrame(monitorRainLoop);
-        }
-      }
-
-      applyRainVolumes();
-      breezeAudio.volume = 0;
+      const rainLoop = createOverlappingLoop(rainPlayers, 2, rainVolume);
+      const breezeLoop = createOverlappingLoop(breezePlayers, 2.5, 0);
 
       function crossfadeAmbience(raining, duration = 1600) {
         const version = ++fadeVersion;
-        const rainStart = rainMixVolume;
-        const breezeStart = breezeAudio.volume;
+        const rainStart = rainLoop.volume;
+        const breezeStart = breezeLoop.volume;
         const rainTarget = soundEnabled && raining ? rainVolume : 0;
         const breezeTarget = soundEnabled && !raining ? breezeVolume : 0;
         const startTime = performance.now();
 
-        startRainPlayback();
-        breezeAudio.play().catch(() => {});
+        rainLoop.start();
+        breezeLoop.start();
 
         function update(now) {
           if (version !== fadeVersion) return;
           const elapsed = Math.min(1, (now - startTime) / duration);
           const eased = elapsed * elapsed * (3 - 2 * elapsed);
-          setRainMixVolume(rainStart + (rainTarget - rainStart) * eased);
-          breezeAudio.volume =
-            breezeStart + (breezeTarget - breezeStart) * eased;
+          rainLoop.setVolume(rainStart + (rainTarget - rainStart) * eased);
+          breezeLoop.setVolume(
+            breezeStart + (breezeTarget - breezeStart) * eased
+          );
 
           if (elapsed < 1) {
             requestAnimationFrame(update);
           } else {
             if (!soundEnabled) {
-              stopRainPlayback();
-              breezeAudio.pause();
+              rainLoop.stop();
+              breezeLoop.stop();
             } else if (raining) {
-              breezeAudio.pause();
+              breezeLoop.stop();
             } else {
-              stopRainPlayback();
+              rainLoop.stop();
             }
           }
         }
@@ -772,8 +794,8 @@
           soundCursorPill.classList.remove("is-visible");
 
           if (soundEnabled) {
-            setRainMixVolume(rainVolume);
-            startRainPlayback();
+            rainLoop.setVolume(rainVolume);
+            rainLoop.start();
           }
 
           window.setTimeout(() => {
